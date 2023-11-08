@@ -20,7 +20,7 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::907389057387:role/ghost
+          role-to-assume: arn:aws:iam::907389057386:role/ghost
           role-session-name: ghostroleaws
           aws-region: eu-central-1
       # # Upload a file to AWS s3
