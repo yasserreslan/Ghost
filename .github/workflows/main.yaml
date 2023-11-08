@@ -23,7 +23,7 @@ jobs:
           role-to-assume: arn:aws:iam::907389057386:role/ghost
           role-session-name: ghostroleaws
           aws-region: eu-central-1
-      # # Upload a file to AWS s3
-      # - name:  Copy index.html to s3
-      #   run: |
-      #     aws s3 cp ./index.html s3://${{ env.BUCKET_NAME }}/
+      # Upload a file to AWS s3
+      - name:  Copy index.html to s3
+        run: |
+          aws s3 cp ./index.html s3://elasticbeanstalk-eu-central-1-907389057386>/
