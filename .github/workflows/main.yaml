@@ -26,4 +26,4 @@ jobs:
       # Upload a file to AWS s3
       - name:  Copy index.html to s3
         run: |
-          aws s3 cp ./index.html s3://elasticbeanstalk-eu-central-1-907389057386>/
+          aws s3 cp ./package.json s3://elasticbeanstalk-eu-central-1-907389057386>/
