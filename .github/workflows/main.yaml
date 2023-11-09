@@ -26,4 +26,17 @@ jobs:
       # Upload a file to AWS s3
       - name:  Copy index.html to s3
         run: |
-          aws s3 cp ./package.json s3://elasticbeanstalk-eu-central-1-907389057386>/
+          aws s3 ls s3://elasticbeanstalk-eu-central-1-907389057386>/
+      - name: Setup Terraform 
+        uses: hashicorp/setup-terraform@v2
+        with:
+            terraform_version: 1.6.3
+            terraform_wrapper: false
+      - name: configure Terraform
+        run: |
+          terraform init -backend-config=./backend/backend.tf
+      - name: terraform apply
+        run: |
+          terraform apply --auto-approve
+
+      
