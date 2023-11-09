@@ -27,22 +27,22 @@ resource "null_resource" "docker_build_push" {
   
 }
 
-# # Define your ECS cluster
-# resource "aws_ecs_cluster" "my_cluster" {
-#   name = "my-ecs-cluster"
-# }
+# Define your ECS cluster
+resource "aws_ecs_cluster" "my_cluster" {
+  name = "my-ecs-cluster"
+}
 
-# # Create a VPC and subnets for the cluster
-# resource "aws_vpc" "my_vpc" {
-#   cidr_block = "10.0.0.0/16"
-# }
+# Create a VPC and subnets for the cluster
+resource "aws_vpc" "my_vpc" {
+  cidr_block = "10.0.0.0/16"
+}
 
-# resource "aws_subnet" "subnet_a" {
-#   count = 2
-#   cidr_block = "10.0.1.${count.index}/24"
-#   vpc_id = aws_vpc.my_vpc.id
-#   availability_zone = "us-east-1a"
-# }
+resource "aws_subnet" "subnet_a" {
+  count = 2
+  cidr_block = "10.0.1.${count.index}/24"
+  vpc_id = aws_vpc.my_vpc.id
+  availability_zone = "eu-central-1"
+}
 
 # # Define an Auto Scaling Group
 # resource "aws_launch_configuration" "my_launch_config" {
