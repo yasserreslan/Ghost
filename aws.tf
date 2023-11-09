@@ -41,7 +41,10 @@ resource "aws_subnet" "subnet_a" {
   count = 2
   cidr_block = "10.0.${count.index + 1}.0/24"
   vpc_id = aws_vpc.my_vpc.id
-  availability_zone = "eu-central-1${format("%c", 97 + count.index)}" # This will result in 'eu-central-1a' for the first subnet and 'eu-central-1b' for the second.
+  availability_zone = element(
+    ["eu-central-1a", "eu-central-1b"],
+    count.index
+  )
 }
 
 # # Define an Auto Scaling Group
