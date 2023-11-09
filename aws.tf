@@ -69,7 +69,7 @@ resource "aws_security_group" "fargate_sg" {
   }
 }
 
-# IAM execution role and policy remain the same
+# IAM execution role and policy
 
 # Define the Fargate-compatible task definition
 resource "aws_ecs_task_definition" "my_task_definition" {
@@ -92,7 +92,72 @@ resource "aws_ecs_task_definition" "my_task_definition" {
   }])
 }
 
-# ALB and ALB security group remain the same
+# ALB and ALB security group 
+# Create an IAM execution role for ECS tasks and attach the AmazonECSTaskExecutionRole policy
+resource "aws_iam_role" "ecs_execution_role" {
+  name = "my-ecs-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action = "sts:AssumeRole",
+      Effect = "Allow",
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
+    }]
+  })
+}
+
+# Attach an IAM policy that provides ECR permissions to the execution role
+resource "aws_iam_policy" "ecs_execution_policy" {
+  name        = "my-ecs-execution-policy"
+  description = "ECR Access Policy for ECS Execution Role"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action = [
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:GetRepositoryPolicy",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetAuthorizationToken",
+        "ecr:GetImageManifest",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage",
+      ],
+      Effect   = "Allow",
+      Resource = "*",
+    }]
+  })
+}
+
+# Attach the ECR policy to the execution role
+resource "aws_iam_policy_attachment" "ecs_execution_role_ecr_attachment" {
+  name       = "ecs_execution_role_ecr_attachment"
+  roles      = [aws_iam_role.ecs_execution_role.name]
+  policy_arn = aws_iam_policy.ecs_execution_policy.arn
+}
+
+resource "aws_iam_role" "ecs_task_role" {
+  name = "my-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
 
 # Define the Fargate ECS service
 resource "aws_ecs_service" "my_service" {
