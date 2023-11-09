@@ -1,8 +1,3 @@
-# Define your provider and AWS region
-provider "aws" {
-  region = "eu-central-1" # Change this to your desired region
-}
-
 # Create an ECR repository
 resource "aws_ecr_repository" "my_ecr_repository" {
   name = "ghost"
