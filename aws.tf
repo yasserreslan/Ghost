@@ -47,8 +47,28 @@ resource "aws_subnet" "subnet_a" {
   )
 }
 
+# Create a security group for Fargate services
+resource "aws_security_group" "fargate_sg" {
+  name_prefix = "my-fargate-sg-"
+  vpc_id      = aws_vpc.my_vpc.id
 
-# Create a security group for the Application Load Balancer (ALB)
+  # Ingress rule to allow traffic from ALB to Fargate services
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    security_groups = [aws_security_group.alb_sg.id] # Allow traffic from ALB security group
+  }
+
+  # Egress rule to allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_security_group" "alb_sg" {
   name_prefix = "my-alb-sg-"
   vpc_id      = aws_vpc.my_vpc.id
@@ -58,7 +78,7 @@ resource "aws_security_group" "alb_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    security_groups = [aws_security_group.alb_sg.id] # Corrected to use the ID of the ALB security group
+    cidr_blocks = ["0.0.0.0/0"] # Allow traffic from anywhere on the internet
   }
 
   # Egress rule to allow all outbound traffic from the ALB
@@ -71,11 +91,12 @@ resource "aws_security_group" "alb_sg" {
 }
 
 
+
 # IAM execution role and policy
 
 # Define the Fargate-compatible task definition
 resource "aws_ecs_task_definition" "my_task_definition" {
-  family                   = "my-task-family"
+  family                   = "ghost"
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
@@ -94,7 +115,7 @@ resource "aws_ecs_task_definition" "my_task_definition" {
   }])
 }
 
-# ALB and ALB security group 
+# ALB and ALB security group remain the same
 # Create an IAM execution role for ECS tasks and attach the AmazonECSTaskExecutionRole policy
 resource "aws_iam_role" "ecs_execution_role" {
   name = "my-ecs-execution-role"
