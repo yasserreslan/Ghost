@@ -196,7 +196,7 @@ resource "aws_ecs_service" "my_service" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.my_target_group.arn
-    container_name   = "my-container"
+    container_name   = "ghost"
     container_port   = 80
   }
 
