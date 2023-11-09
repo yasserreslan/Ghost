@@ -47,20 +47,21 @@ resource "aws_subnet" "subnet_a" {
   )
 }
 
-# Create a security group for Fargate services
-resource "aws_security_group" "fargate_sg" {
-  name_prefix = "my-fargate-sg-"
+
+# Create a security group for the Application Load Balancer (ALB)
+resource "aws_security_group" "alb_sg" {
+  name_prefix = "my-alb-sg-"
   vpc_id      = aws_vpc.my_vpc.id
 
-  # Ingress rule to allow traffic from ALB to Fargate services
+  # Ingress rule to allow traffic from the internet to the ALB
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    security_groups = [aws_security_group.alb_sg.id] # Allow traffic from ALB security group
+    security_groups = [aws_security_group.alb_sg.id] # Corrected to use the ID of the ALB security group
   }
 
-  # Egress rule to allow all outbound traffic
+  # Egress rule to allow all outbound traffic from the ALB
   egress {
     from_port   = 0
     to_port     = 0
@@ -68,6 +69,7 @@ resource "aws_security_group" "fargate_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 # IAM execution role and policy
 
