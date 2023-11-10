@@ -1,6 +1,6 @@
 # Create an ECR repository
 resource "aws_ecrpublic_repository" "my_ecr_repository" {
-  name = "ghost"
+  repository_name = "ghost"
 }
 
 # Create a Docker image and push it to ECR
