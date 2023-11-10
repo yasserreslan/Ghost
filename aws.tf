@@ -202,6 +202,15 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
+resource "aws_internet_gateway" "my_gateway" {
+  vpc_id = aws_vpc.my_vpc.id
+}
+
+resource "aws_route" "internet_access" {
+  route_table_id         = aws_vpc.my_vpc.main_route_table_id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.my_gateway.id
+}
 
 # Define the Fargate ECS service
 resource "aws_ecs_service" "my_service" {
