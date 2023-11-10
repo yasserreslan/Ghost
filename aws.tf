@@ -27,6 +27,14 @@ resource "null_resource" "docker_build_push" {
   
 }
 
+resource "null_resource" "make_ecr_public" {
+  depends_on = [aws_ecr_repository.my_ecr_repository]
+
+  provisioner "local-exec" {
+    command = "aws ecr set-repository-policy --repository-name ghost --policy-text '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"MakeItPublic\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"ecr:GetDownloadUrlForLayer\"}]}' --region eu-central-1"
+  }
+}
+
 # Define your ECS cluster
 resource "aws_ecs_cluster" "my_cluster" {
   name = "my-ecs-cluster"
