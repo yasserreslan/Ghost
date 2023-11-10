@@ -127,13 +127,21 @@ resource "aws_ecs_task_definition" "my_task_definition" {
   network_mode = "awsvpc" # Required for Fargate
 
   container_definitions = jsonencode([{
-    name  = "ghost"
-    image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
-    portMappings = [{
-      containerPort = 80
-      hostPort      = 80
-    }]
-  }])
+  name  = "ghost"
+  image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+  portMappings = [{
+    containerPort = 80
+    hostPort      = 80
+  }]
+  logConfiguration = {
+    logDriver = "awslogs"
+    options = {
+      awslogs-group         = aws_cloudwatch_log_group.my_log_group.name
+      awslogs-region        = "eu-central-1"  # Replace with your region
+      awslogs-stream-prefix = "ecs"
+    }
+  }
+}])
 }
 
 # ALB and ALB security group remain the same
@@ -210,6 +218,10 @@ resource "aws_route" "internet_access" {
   route_table_id         = aws_vpc.my_vpc.main_route_table_id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.my_gateway.id
+}
+
+resource "aws_cloudwatch_log_group" "my_log_group" {
+  name = "/ecs/my-ecs-service"
 }
 
 # Define the Fargate ECS service
