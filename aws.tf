@@ -1,5 +1,5 @@
 # Create an ECR repository
-resource "aws_ecr_repository" "my_ecr_repository" {
+resource "aws_ecrpublic_repository" "my_ecr_repository" {
   name = "ghost"
 }
 
