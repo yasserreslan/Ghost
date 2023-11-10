@@ -6,7 +6,7 @@ resource "aws_ecrpublic_repository" "my_ecr_repository" {
 # Create a Docker image and push it to ECR
 resource "null_resource" "docker_build_push" {
   triggers = {
-    ecr_repository_url = aws_ecr_repository.my_ecr_repository.repository_url
+    ecr_repository_url = aws_ecrpublic_repository.my_ecr_repository.repository_url
   }
 
   provisioner "local-exec" {
@@ -14,21 +14,21 @@ resource "null_resource" "docker_build_push" {
   }
 
   provisioner "local-exec" {
-    command = "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.my_ecr_repository.repository_url}"
+    command = "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${aws_ecrpublic_repository.my_ecr_repository.repository_url}"
   }
 
   provisioner "local-exec" {
-    command = "docker tag ghost:latest ${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+    command = "docker tag ghost:latest ${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
   }
 
   provisioner "local-exec" {
-    command = "docker push ${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+    command = "docker push ${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
   }
   
 }
 
 resource "null_resource" "make_ecr_public" {
-  depends_on = [aws_ecr_repository.my_ecr_repository]
+  depends_on = [aws_ecrpublic_repository.my_ecr_repository]
 
   provisioner "local-exec" {
     command = "aws ecr set-repository-policy --repository-name ghost --policy-text '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"MakeItPublic\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"ecr:GetDownloadUrlForLayer\"}]}' --region eu-central-1"
@@ -136,7 +136,7 @@ resource "aws_ecs_task_definition" "my_task_definition" {
 
   container_definitions = jsonencode([{
   name  = "ghost"
-  image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+  image = "${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
   portMappings = [{
     containerPort = 80
     hostPort      = 80
