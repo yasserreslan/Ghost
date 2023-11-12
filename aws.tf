@@ -1,38 +1,45 @@
+# Define an AWS ECR public repository
 resource "aws_ecrpublic_repository" "my_ecr_repository" {
-   repository_name = "ghost"
- }
+  repository_name = "ghost"
+}
 
- # Create a Docker image and push it to ECR
- resource "null_resource" "docker_build_push" {
-   triggers = {
-     ecr_repository_url = aws_ecrpublic_repository.my_ecr_repository.repository_url
-   }
+# Build and push a Docker image to the ECR repository
+resource "null_resource" "docker_build_push" {
 
-   provisioner "local-exec" {
-     command = "docker pull ghost"
-   }
+  triggers = {
+    ecr_repo_uri = aws_ecrpublic_repository.my_ecr_repository.repository_uri
+  }
 
-   provisioner "local-exec" {
-     command = "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${aws_ecrpublic_repository.my_ecr_repository.repository_url}"
-   }
+  provisioner "local-exec" {
+    command = "docker pull ghost"
+  }
 
-   provisioner "local-exec" {
-     command = "docker tag ghost:latest ${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
-   }
+  provisioner "local-exec" {
+    command = "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${aws_ecrpublic_repository.my_ecr_repository.repository_uri}"
+  }
 
-   provisioner "local-exec" {
-     command = "docker push ${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
-   }
+  provisioner "local-exec" {
+    command = "docker tag ghost:latest ${aws_ecrpublic_repository.my_ecr_repository.repository_uri}:latest"
+  }
 
- }
+  provisioner "local-exec" {
+    command = "docker push ${aws_ecrpublic_repository.my_ecr_repository.repository_uri}:latest"
+  }
+}
 
- resource "null_resource" "make_ecr_public" {
-   depends_on = [aws_ecrpublic_repository.my_ecr_repository]
+# Set the ECR repository policy to public
+resource "null_resource" "make_ecr_public" {
+  depends_on = [aws_ecrpublic_repository.my_ecr_repository]
 
-   provisioner "local-exec" {
-     command = "aws ecr set-repository-policy --repository-name ghost --policy-text '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"MakeItPublic\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"ecr:GetDownloadUrlForLayer\"}]}' --region eu-central-1"
-   }
- }
+  provisioner "local-exec" {
+    command = "aws ecr set-repository-policy --repository-name ghost --policy-text '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"MakeItPublic\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"ecr:GetDownloadUrlForLayer\"}]}' --region eu-central-1"
+  }
+}
+
+
+
+
+
 
  # Define your ECS cluster
  resource "aws_ecs_cluster" "my_cluster" {
@@ -75,6 +82,8 @@ resource "aws_ecrpublic_repository" "my_ecr_repository" {
      cidr_blocks = ["0.0.0.0/0"]
    }
  }
+
+
 
  resource "aws_security_group" "alb_sg" {
    name_prefix = "my-alb-sg-"
