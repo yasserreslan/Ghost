@@ -1,341 +1,271 @@
-provider "aws" {
-  region     = "eu-west-1"
-}
+resource "aws_ecrpublic_repository" "my_ecr_repository" {
+   repository_name = "ghost"
+ }
 
-# # Will we store our state in S3, and lock with dynamodb
-# terraform {
-#   backend "s3" {
-#     # Replace this with your bucket name!
-#     bucket         = "terraform-up-and-running-state-gg"
-#     key            = "covid/prod/terraform.tfstate"
-#     region         = "eu-west-3"
-#     # Replace this with your DynamoDB table name!
-#     dynamodb_table = "terraform-up-and-running-locks"
-#     encrypt        = true
-#   }
-# }
+ # Create a Docker image and push it to ECR
+ resource "null_resource" "docker_build_push" {
+   triggers = {
+     ecr_repository_url = aws_ecrpublic_repository.my_ecr_repository.repository_url
+   }
 
-# VARIABLES
+   provisioner "local-exec" {
+     command = "docker pull ghost"
+   }
 
-# Don't forget to replace S3 name in userdata!
-variable "tag" {
-  default = "ghost-terra"
-}
-variable "ebs-id" {
-  default = "vol-0a85b23a8069e39b5"
-}
-variable "dns_name" {
-  default = "ghost.mymicrosaving.com"
-}
-variable "dns_domain" {
-  default = "mymicrosaving.com"
-}
-variable "cert_arn" {
-  default = "arn:aws:acm:us-east-1:391378411314:certificate/be08f8a9-7c2e-404f-9fdb-159783313f57"
-}
-# We will get this var after a first deploy, in the output, please replace then
-variable "instance_dns" {
-  default = "ec2-3-249-221-28.eu-west-1.compute.amazonaws.com"
-}
+   provisioner "local-exec" {
+     command = "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${aws_ecrpublic_repository.my_ecr_repository.repository_url}"
+   }
 
+   provisioner "local-exec" {
+     command = "docker tag ghost:latest ${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
+   }
 
-# LOOKUP DATA
-data "aws_vpc" "default" {
-  default = true
-}
-data "aws_subnet_ids" "default" {
-  vpc_id = "${data.aws_vpc.default.id}"
-}
+   provisioner "local-exec" {
+     command = "docker push ${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
+   }
 
-data "aws_instance" "i" {
-  instance_tags = {
-    Name = "${var.tag}"
-  }
-}
-# S3: GHOST DATA
-resource "aws_s3_bucket" "b" {
-  bucket = "${var.tag}-backup-gg"
-  acl    = "private"
-  tags = {
-    Name        = var.tag
-    Environment = "Master"
-  }
-}
+ }
 
-resource "aws_s3_bucket_policy" "b" {
-  bucket = aws_s3_bucket.b.id
+ resource "null_resource" "make_ecr_public" {
+   depends_on = [aws_ecrpublic_repository.my_ecr_repository]
 
-  policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Id": "${var.tag}-policy",
-  "Statement": [
-    {
-      "Sid": "ListBucket",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "*"
-      },
-      "Action": [
-        "s3:GetBucketLocation",
-        "s3:ListBucket"
-      ],
-      "Resource": "${aws_s3_bucket.b.arn}"
-    },
-    {
-      "Sid": "WriteToBucket",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "${aws_iam_role.role.arn}"
-      },
-      "Action": "s3:*",
-      "Resource": [
-          "${aws_s3_bucket.b.arn}/*",
-          "${aws_s3_bucket.b.arn}"
-      ]
-    }
-  ]
-}
-POLICY
-}
+   provisioner "local-exec" {
+     command = "aws ecr set-repository-policy --repository-name ghost --policy-text '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"MakeItPublic\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"ecr:GetDownloadUrlForLayer\"}]}' --region eu-central-1"
+   }
+ }
 
-# EC2 IAM role
-resource "aws_iam_role_policy" "policy" {
-  name = "${var.tag}-policy"
-  role = aws_iam_role.role.id
+ # Define your ECS cluster
+ resource "aws_ecs_cluster" "my_cluster" {
+   name = "my-ecs-cluster"
+ }
 
-  policy = <<-EOF
-  {
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Action": [
-          "ec2:Describe*",
-          "s3:List*",
-          "s3:Get*"
-        ],
-        "Effect": "Allow",
-        "Resource": "*"
-      },
-      {
-        "Action": [
-          "s3:*"
-        ],
-        "Effect": "Allow",
-        "Resource": [
-          "${aws_s3_bucket.b.arn}/*",
-          "${aws_s3_bucket.b.arn}"
-        ]
-      }
-    ]
-  }
-  EOF
-}
-resource "aws_iam_role" "role" {
-  name = "${var.tag}-role"
+ # Create a VPC and subnets for the cluster
+ resource "aws_vpc" "my_vpc" {
+   cidr_block = "10.0.0.0/16"
+ }
 
-  assume_role_policy = <<-EOF
-  {
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Action": "sts:AssumeRole",
-        "Principal": {
-          "Service": "ec2.amazonaws.com"
-        },
-        "Effect": "Allow",
-        "Sid": ""
-      }
-    ]
-  }
-  EOF
-}
-resource "aws_iam_instance_profile" "profile" {
-  name = "${var.tag}-profile"
-  role = aws_iam_role.role.name
-}
+ resource "aws_subnet" "subnet_a" {
+   count = 2
+   cidr_block = "10.0.${count.index + 1}.0/24"
+   vpc_id = aws_vpc.my_vpc.id
+   availability_zone = element(
+     ["eu-central-1a", "eu-central-1b"],
+     count.index
+   )
+ }
 
-# EC2
-resource "aws_security_group" "firewall" {
-  name = var.tag
-  description = "Security Group"
-  vpc_id = data.aws_vpc.default.id
-  ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
+ # Create a security group for Fargate services
+ resource "aws_security_group" "fargate_sg" {
+   name_prefix = "my-fargate-sg-"
+   vpc_id      = aws_vpc.my_vpc.id
 
-resource "aws_launch_template" "lt" {
-  name_prefix   = "${var.tag}-"
-  image_id      = "ami-06ce3edf0cff21f07"
-  instance_type = "t2.micro"
-  key_name      = "aws-finstack-greg-user"
-  iam_instance_profile {
-    name = aws_iam_instance_profile.profile.name
-  }
-  vpc_security_group_ids = ["${aws_security_group.firewall.id}"]
-  user_data     = "${base64encode(<<EOF
-    #!/bin/bash -xe
-    yum update -y 
-    yum install -y docker
-    systemctl start docker.service
-    systemctl enable docker.service
-    sudo gpasswd -a ec2-user docker
-    whoami > README.md
-    aws s3 cp s3://ghost-terra-backup-gg/ghost /ghost --recursive
-    chown -R ec2-user:ec2-user /ghost
-    chmod -R 755 /ghost
-    echo "docker run -d -p 80:2368 -e NODE_ENV=production --name ghost -v /ghost:/var/lib/ghost ghost:0.11.3" > /ghost/README.md
-    (crontab -l 2>/dev/null; echo "*/5 * * * * docker stop ghost && echo `date`: backup started >> /ghost/backup.log && aws s3 sync /ghost s3://ghost-terra-backup-gg/ghost --delete && docker start ghost") | crontab -
-    docker run -d -p 80:2368 -e NODE_ENV=production --name ghost -v /ghost:/var/lib/ghost ghost:0.11.3
-  EOF
-  )}"
-  tag_specifications {
-    resource_type = "instance"
+   # Ingress rule to allow traffic from ALB to Fargate services
+   ingress {
+     from_port   = 80
+     to_port     = 80
+     protocol    = "tcp"
+     security_groups = [aws_security_group.alb_sg.id] # Allow traffic from ALB security group
+   }
 
-    tags = {
-      Name = var.tag
-    }
-  }
-  lifecycle {
-    create_before_destroy = true
-  }
-}
+   # Egress rule to allow all outbound traffic
+   egress {
+     from_port   = 0
+     to_port     = 0
+     protocol    = "-1"
+     cidr_blocks = ["0.0.0.0/0"]
+   }
+ }
 
-resource "aws_autoscaling_group" "asg" {
-  name                      = "asg-${aws_launch_template.lt.name}"
-  max_size                  = 1
-  min_size                  = 1
-  desired_capacity          = 1
-  availability_zones        = ["eu-west-1a","eu-west-1b"]
-  vpc_zone_identifier       = ["subnet-8efea4e8", "subnet-4756311d"]
-  launch_template {
-    id      = aws_launch_template.lt.id
-    version = "$Latest"
-  }
-#   target_group_arns         = ["${aws_lb_target_group.tg.arn}"]
-  lifecycle {
-    create_before_destroy = true
-  }
-}
+ resource "aws_security_group" "alb_sg" {
+   name_prefix = "my-alb-sg-"
+   vpc_id      = aws_vpc.my_vpc.id
+
+   # Ingress rule to allow traffic from the internet to the ALB
+   ingress {
+     from_port   = 80
+     to_port     = 80
+     protocol    = "tcp"
+     cidr_blocks = ["0.0.0.0/0"] # Allow traffic from anywhere on the internet
+   }
+
+   # Egress rule to allow all outbound traffic from the ALB
+   egress {
+     from_port   = 0
+     to_port     = 0
+     protocol    = "-1"
+     cidr_blocks = ["0.0.0.0/0"]
+   }
+ }
+
+ resource "aws_lb" "my_alb" {
+   name               = "my-alb"
+   internal           = false
+   load_balancer_type = "application"
+   security_groups    = [aws_security_group.alb_sg.id]
+   subnets            = aws_subnet.subnet_a[*].id
+
+   enable_deletion_protection = false
+ }
+
+ resource "aws_lb_listener" "my_listener" {
+   load_balancer_arn = aws_lb.my_alb.arn
+   port              = "80"
+   protocol          = "HTTP"
+
+   default_action {
+     type             = "forward"
+     target_group_arn = aws_lb_target_group.my_target_group.arn
+   }
+ }
 
 
-# # Load balancer --> target group of ASG
-# resource "aws_lb" "lb" {
-#   name               = "lb-hello"
-#   internal           = false
-#   load_balancer_type = "application"
-#   security_groups    = ["${aws_security_group.firewall.id}"]
-#   subnets            = "${data.aws_subnet_ids.default.ids}"
-# }
 
-# resource "aws_lb_listener" "http" {
-#   load_balancer_arn = "${aws_lb.lb.arn}"
-#   port              = "80"
-#   protocol          = "HTTP"
-#   default_action {
-#     type             = "forward"
-#     target_group_arn = "${aws_lb_target_group.tg.arn}"
-#   }
-# }
+ # IAM execution role and policy
 
-# CLOUDFRONT DISTRIBUTION
-locals {
-  s3_origin_id = "S3-${var.tag}"
-}
+ # Define the Fargate-compatible task definition
+ resource "aws_ecs_task_definition" "my_task_definition" {
+   family                   = "ghost"
+   requires_compatibilities = ["FARGATE"]
+   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+   task_role_arn            = aws_iam_role.ecs_task_role.arn
+   cpu                      = "256"  # Adjust based on your needs
+   memory                   = "512"  # Adjust based on your needs
 
-resource "aws_cloudfront_distribution" "s3_distribution" {
-  origin {
-    domain_name = var.instance_dns
-    origin_id   = local.s3_origin_id
-    custom_origin_config {
-      http_port              = "80"
-      https_port             = "443"
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
-    }
-  }
-  enabled             = true
-  is_ipv6_enabled     = true
-  comment             = "My ghost blog"
-  default_root_object = "/"
+   network_mode = "awsvpc" # Required for Fargate
 
-  aliases = ["${var.dns_name}"]
+   container_definitions = jsonencode([{
+   name  = "ghost"
+   image = "${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
+   portMappings = [{
+     containerPort = 80
+     hostPort      = 80
+   }]
+   logConfiguration = {
+     logDriver = "awslogs"
+     options = {
+       awslogs-group         = aws_cloudwatch_log_group.my_log_group.name
+       awslogs-region        = "eu-central-1"  # Replace with your region
+       awslogs-stream-prefix = "ecs"
+     }
+   }
+ }])
+ }
 
-  default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = local.s3_origin_id
+ # ALB and ALB security group remain the same
+ # Create an IAM execution role for ECS tasks and attach the AmazonECSTaskExecutionRole policy
+ resource "aws_iam_role" "ecs_execution_role" {
+   name = "my-ecs-execution-role"
 
-    forwarded_values {
-      query_string = false
+   assume_role_policy = jsonencode({
+     Version = "2012-10-17",
+     Statement = [{
+       Action = "sts:AssumeRole",
+       Effect = "Allow",
+       Principal = {
+         Service = "ecs-tasks.amazonaws.com"
+       }
+     }]
+   })
+ }
 
-      cookies {
-        forward = "none"
-      }
-    }
+ # Attach an IAM policy that provides ECR permissions to the execution role
+ resource "aws_iam_policy" "ecs_execution_policy" {
+   name        = "my-ecs-execution-policy"
+   description = "ECR Access Policy for ECS Execution Role"
 
-    viewer_protocol_policy = "redirect-to-https"
-  }
+   policy = jsonencode({
+     Version = "2012-10-17",
+     Statement = [{
+       Action = [
+         "ecr:GetDownloadUrlForLayer",
+         "ecr:GetRepositoryPolicy",
+         "ecr:BatchCheckLayerAvailability",
+         "ecr:GetAuthorizationToken",
+         "ecr:GetImageManifest",
+         "ecr:InitiateLayerUpload",
+         "ecr:UploadLayerPart",
+         "ecr:CompleteLayerUpload",
+         "ecr:PutImage",
+       ],
+       Effect   = "Allow",
+       Resource = "*",
+     }]
+   })
+ }
 
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
+ # Attach the ECR policy to the execution role
+ resource "aws_iam_policy_attachment" "ecs_execution_role_ecr_attachment" {
+   name       = "ecs_execution_role_ecr_attachment"
+   roles      = [aws_iam_role.ecs_execution_role.name]
+   policy_arn = aws_iam_policy.ecs_execution_policy.arn
+ }
 
-  viewer_certificate {
-    acm_certificate_arn = var.cert_arn
-    ssl_support_method = "sni-only"
-  }
-}
+ resource "aws_iam_role" "ecs_task_role" {
+   name = "my-ecs-task-role"
 
-# ROUTE53
-data "aws_route53_zone" "main" {
-  name = var.dns_domain
-}
-resource "aws_route53_record" "www" {
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = var.dns_name
-  type    = "A"
+   assume_role_policy = jsonencode({
+     Version = "2012-10-17",
+     Statement = [
+       {
+         Action = "sts:AssumeRole",
+         Effect = "Allow",
+         Principal = {
+           Service = "ecs-tasks.amazonaws.com"
+         }
+       }
+     ]
+   })
+ }
 
-  alias {
-    name                   =  aws_cloudfront_distribution.s3_distribution.domain_name
-    zone_id                = aws_cloudfront_distribution.s3_distribution.hosted_zone_id
-    evaluate_target_health = false
-  }
-}
+ resource "aws_internet_gateway" "my_gateway" {
+   vpc_id = aws_vpc.my_vpc.id
+ }
 
-output "zone_id" {
-  value = data.aws_route53_zone.main.zone_id
-}
-output "domain_name" {
-  value = aws_cloudfront_distribution.s3_distribution.domain_name
-}
-output "hosted_zone_id" {
-  value = aws_cloudfront_distribution.s3_distribution.hosted_zone_id
-}
-output "default_vpc_id" {
-  value = data.aws_vpc.default.id
-}
-output "default_subnet_ids" {
-  value = ["${data.aws_subnet_ids.default.ids}"]
-}
-output "my_instance_dns" {
-  value = data.aws_instance.i.public_dns
-}
+ resource "aws_route" "internet_access" {
+   route_table_id         = aws_vpc.my_vpc.main_route_table_id
+   destination_cidr_block = "0.0.0.0/0"
+   gateway_id             = aws_internet_gateway.my_gateway.id
+ }
+
+ resource "aws_cloudwatch_log_group" "my_log_group" {
+   name = "/ecs/my-ecs-service"
+ }
+
+ # Define the Fargate ECS service
+ resource "aws_ecs_service" "my_service" {
+   name            = "my-ecs-service"
+   cluster         = aws_ecs_cluster.my_cluster.id
+   task_definition = aws_ecs_task_definition.my_task_definition.arn
+   launch_type     = "FARGATE"
+
+   network_configuration {
+     subnets = aws_subnet.subnet_a[*].id
+     security_groups = [aws_security_group.fargate_sg.id]
+   }
+
+   load_balancer {
+     target_group_arn = aws_lb_target_group.my_target_group.arn
+     container_name   = "ghost"
+     container_port   = 80
+   }
+
+   desired_count = 1
+ }
+
+ # Define a target group for the load balancer
+ resource "aws_lb_target_group" "my_target_group" {
+   name     = "my-target-group"
+   port     = 80
+   protocol = "HTTP"
+   vpc_id   = aws_vpc.my_vpc.id
+   target_type = "ip"
+
+   health_check {
+     path                = "/"
+     interval            = 30
+     timeout             = 5
+     healthy_threshold   = 2
+     unhealthy_threshold = 2
+     matcher             = "200"
+   }
+ }
