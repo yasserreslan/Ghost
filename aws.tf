@@ -144,7 +144,7 @@ resource "null_resource" "make_ecr_public" {
 
    container_definitions = jsonencode([{
    name  = "ghost"
-   image = "${aws_ecrpublic_repository.my_ecr_repository.repository_url}:latest"
+   image = "${aws_ecrpublic_repository.my_ecr_repository.repository_uri}:latest"
    portMappings = [{
      containerPort = 80
      hostPort      = 80
