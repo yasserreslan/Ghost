@@ -10,6 +10,8 @@ resource "aws_lb" "ghost_alb" {
   })
 }
 
+
+
 resource "aws_lb_listener" "ghost_lb_listener" {
   load_balancer_arn = aws_lb.ghost_alb.arn
   port              = 80
