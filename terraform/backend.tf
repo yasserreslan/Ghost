@@ -1,5 +1,3 @@
-terraform {
-  backend "s3" {
-    encrypt = true
-  }
-}
+bucket="terraform.yasser"
+key="ghostproject"
+region="eu-central-1"

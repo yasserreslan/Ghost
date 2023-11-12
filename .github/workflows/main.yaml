@@ -34,7 +34,7 @@ jobs:
             terraform_wrapper: false
       - name: configure Terraform
         run: |
-          terraform init -backend-config=./backend/backend.tf
+          terraform init -backend-config=./terraform/backend.tf
       - name: terraform apply
         run: |
           terraform apply --auto-approve
