@@ -1,45 +1,32 @@
-# Define an AWS ECR public repository
-resource "aws_ecrpublic_repository" "my_ecr_repository" {
-  repository_name = "ghost"
-}
 
-# Build and push a Docker image to the ECR repository
-resource "null_resource" "docker_build_push" {
+ # Create an ECR repository
+ resource "aws_ecr_repository" "my_ecr_repository" {
+   name = "ghost"
+ }
 
-  triggers = {
-    ecr_repo_uri = aws_ecrpublic_repository.my_ecr_repository.repository_uri
-  }
+ # Create a Docker image and push it to ECR
+ resource "null_resource" "docker_build_push" {
+   triggers = {
+     ecr_repository_url = aws_ecr_repository.my_ecr_repository.repository_url
+   }
 
-  provisioner "local-exec" {
-    command = "docker pull ghost"
-  }
+   provisioner "local-exec" {
+     command = "docker pull ghost"
+   }
 
-  provisioner "local-exec" {
-    command = "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${aws_ecrpublic_repository.my_ecr_repository.repository_uri}"
-  }
+   provisioner "local-exec" {
+     command = "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.my_ecr_repository.repository_url}"
+   }
 
-  provisioner "local-exec" {
-    command = "docker tag ghost:latest ${aws_ecrpublic_repository.my_ecr_repository.repository_uri}:latest"
-  }
+   provisioner "local-exec" {
+     command = "docker tag ghost:latest ${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+   }
 
-  provisioner "local-exec" {
-    command = "docker push ${aws_ecrpublic_repository.my_ecr_repository.repository_uri}:latest"
-  }
-}
+   provisioner "local-exec" {
+     command = "docker push ${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+   }
 
-# Set the ECR repository policy to public
-resource "null_resource" "make_ecr_public" {
-  depends_on = [aws_ecrpublic_repository.my_ecr_repository]
-
-  provisioner "local-exec" {
-    command = "aws ecr set-repository-policy --repository-name ghost --policy-text '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"MakeItPublic\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"ecr:GetDownloadUrlForLayer\"}]}' --region eu-central-1"
-  }
-}
-
-
-
-
-
+ }
 
  # Define your ECS cluster
  resource "aws_ecs_cluster" "my_cluster" {
@@ -83,8 +70,6 @@ resource "null_resource" "make_ecr_public" {
    }
  }
 
-
-
  resource "aws_security_group" "alb_sg" {
    name_prefix = "my-alb-sg-"
    vpc_id      = aws_vpc.my_vpc.id
@@ -106,27 +91,6 @@ resource "null_resource" "make_ecr_public" {
    }
  }
 
- resource "aws_lb" "my_alb" {
-   name               = "my-alb"
-   internal           = false
-   load_balancer_type = "application"
-   security_groups    = [aws_security_group.alb_sg.id]
-   subnets            = aws_subnet.subnet_a[*].id
-
-   enable_deletion_protection = false
- }
-
- resource "aws_lb_listener" "my_listener" {
-   load_balancer_arn = aws_lb.my_alb.arn
-   port              = "80"
-   protocol          = "HTTP"
-
-   default_action {
-     type             = "forward"
-     target_group_arn = aws_lb_target_group.my_target_group.arn
-   }
- }
-
 
 
  # IAM execution role and policy
@@ -143,21 +107,13 @@ resource "null_resource" "make_ecr_public" {
    network_mode = "awsvpc" # Required for Fargate
 
    container_definitions = jsonencode([{
-   name  = "ghost"
-   image = "${aws_ecrpublic_repository.my_ecr_repository.repository_uri}:latest"
-   portMappings = [{
-     containerPort = 80
-     hostPort      = 80
-   }]
-   logConfiguration = {
-     logDriver = "awslogs"
-     options = {
-       awslogs-group         = aws_cloudwatch_log_group.my_log_group.name
-       awslogs-region        = "eu-central-1"  # Replace with your region
-       awslogs-stream-prefix = "ecs"
-     }
-   }
- }])
+     name  = "ghost"
+     image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+     portMappings = [{
+       containerPort = 80
+       hostPort      = 80
+     }]
+   }])
  }
 
  # ALB and ALB security group remain the same
@@ -226,18 +182,25 @@ resource "null_resource" "make_ecr_public" {
    })
  }
 
- resource "aws_internet_gateway" "my_gateway" {
-   vpc_id = aws_vpc.my_vpc.id
+ resource "aws_lb" "my_alb" {
+   name               = "my-alb"
+   internal           = false
+   load_balancer_type = "application"
+   security_groups    = [aws_security_group.alb_sg.id]
+   subnets            = aws_subnet.subnet_a[*].id
+
+   enable_deletion_protection = false
  }
 
- resource "aws_route" "internet_access" {
-   route_table_id         = aws_vpc.my_vpc.main_route_table_id
-   destination_cidr_block = "0.0.0.0/0"
-   gateway_id             = aws_internet_gateway.my_gateway.id
- }
+ resource "aws_lb_listener" "my_listener" {
+   load_balancer_arn = aws_lb.my_alb.arn
+   port              = 80
+   protocol          = "HTTP"
 
- resource "aws_cloudwatch_log_group" "my_log_group" {
-   name = "/ecs/my-ecs-service"
+   default_action {
+     type             = "forward"
+     target_group_arn = aws_lb_target_group.my_target_group.arn
+   }
  }
 
  # Define the Fargate ECS service
