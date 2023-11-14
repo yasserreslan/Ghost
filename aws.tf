@@ -272,7 +272,7 @@ resource "aws_ecs_service" "my_service" {
   network_configuration {
     subnets          = [aws_subnet.subnet_a[0].id, aws_subnet.subnet_a[1].id] # Replace with your private subnet IDs
     security_groups  = [aws_security_group.ecs_tasks_sg.id]
-    assign_public_ip = "ENABLED"  
+    assign_public_ip = true
   }
 
   load_balancer {
