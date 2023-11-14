@@ -105,6 +105,11 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
+resource "aws_cloudwatch_log_group" "ecs_log_group" {
+  name = "/ecs/my-ecs-service" # The name should match the one specified in the task definition
+  retention_in_days = 30      # Set the log retention period as required
+}
+
 
 
 # IAM execution role and policy
@@ -127,16 +132,19 @@ resource "aws_ecs_task_definition" "my_task_definition" {
         containerPort = 80
         hostPort      = 80
     }]
+
     logConfiguration = {
         logDriver = "awslogs"
         options = {
-        awslogs-group         = "/ecs/my-ecs-service"
-        awslogs-region        = "eu-central-1"
+        awslogs-group         = aws_cloudwatch_log_group.ecs_log_group.name
+        awslogs-region        = "eu-central-1" # Replace with your AWS region
         awslogs-stream-prefix = "ecs"
         }
     }
     }])
 }
+
+
 
 # ALB and ALB security group remain the same
 # Create an IAM execution role for ECS tasks and attach the AmazonECSTaskExecutionRole policy
@@ -190,6 +198,7 @@ resource "aws_route" "internet_access" {
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.my_igw.id
 }
+
 
 
 # Attach the ECR policy to the execution role
