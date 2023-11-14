@@ -180,6 +180,18 @@ resource "aws_iam_policy" "ecs_execution_policy" {
   })
 }
 
+resource "aws_internet_gateway" "my_igw" {
+  vpc_id = aws_vpc.my_vpc.id
+}
+
+
+resource "aws_route" "internet_access" {
+  route_table_id         = aws_vpc.my_vpc.main_route_table_id // Replace with your route table ID if not using the default
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.my_igw.id
+}
+
+
 # Attach the ECR policy to the execution role
 resource "aws_iam_policy_attachment" "ecs_execution_role_ecr_attachment" {
   name       = "ecs_execution_role_ecr_attachment"
