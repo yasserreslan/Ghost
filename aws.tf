@@ -192,6 +192,14 @@ resource "aws_internet_gateway" "my_igw" {
 }
 
 
+resource "aws_subnet" "my_public_subnet" {
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = "10.0.1.0/24"  # Adjust CIDR block as needed
+  map_public_ip_on_launch = true
+  availability_zone = "eu-central-1a"  # Replace with your desired AZ
+}
+
+
 resource "aws_nat_gateway" "my_nat_gateway" {
   allocation_id = aws_eip.my_eip.id
   subnet_id     = aws_subnet.my_public_subnet.id
@@ -264,6 +272,7 @@ resource "aws_ecs_service" "my_service" {
   network_configuration {
     subnets          = [aws_subnet.subnet_a[0].id, aws_subnet.subnet_a[1].id] # Replace with your private subnet IDs
     security_groups  = [aws_security_group.ecs_tasks_sg.id]
+    assign_public_ip = "ENABLED"  
   }
 
   load_balancer {
