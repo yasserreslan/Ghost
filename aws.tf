@@ -120,8 +120,6 @@ resource "aws_ecs_task_definition" "my_task_definition" {
 
   network_mode = "awsvpc" # Required for Fargate
 
-  task_role_arn = aws_iam_role.ecs_task_role.arn
-
   container_definitions = jsonencode([{
     name  = "ghost"
     image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
