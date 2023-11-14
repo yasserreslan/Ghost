@@ -106,8 +106,8 @@ resource "aws_security_group" "fargate_sg" {
   }
 
   egress {
-    from_port   = 443
-    to_port     = 443
+    from_port   = 0
+    to_port     = 65535
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -135,8 +135,8 @@ resource "aws_security_group" "alb_sg" {
 
   egress {
     from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    to_port     = 65535
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
