@@ -240,7 +240,6 @@ resource "aws_route" "nat_gateway_route" {
 
 # Attach the AmazonECSTaskExecutionRolePolicy policy
 resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy_attachment" {
-  name       = "ecs_execution_role_ecr_attachment"
   role       = aws_iam_role.ecs_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
