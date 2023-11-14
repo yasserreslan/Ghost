@@ -194,7 +194,7 @@ resource "aws_internet_gateway" "my_igw" {
 
 resource "aws_subnet" "my_public_subnet" {
   vpc_id            = aws_vpc.my_vpc.id
-  cidr_block        = "10.0.1.0/24"  # Adjust CIDR block as needed
+  cidr_block        = "10.0.3.0/24"  # Changed to a non-overlapping range
   map_public_ip_on_launch = true
   availability_zone = "eu-central-1a"  # Replace with your desired AZ
 }
