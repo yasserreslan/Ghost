@@ -47,20 +47,28 @@ resource "aws_subnet" "subnet_a" {
   )
 }
 
-# Create a security group for Fargate services
+# Security group for Fargate services
 resource "aws_security_group" "fargate_sg" {
   name_prefix = "my-fargate-sg-"
   vpc_id      = aws_vpc.my_vpc.id
 
-  # Ingress rule to allow traffic from ALB to Fargate services
+  # Allow HTTP and HTTPS traffic
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
     security_groups = [aws_security_group.alb_sg.id] # Allow traffic from ALB security group
+
   }
 
-  # Egress rule to allow all outbound traffic
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -68,20 +76,27 @@ resource "aws_security_group" "fargate_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 resource "aws_security_group" "alb_sg" {
   name_prefix = "my-alb-sg-"
   vpc_id      = aws_vpc.my_vpc.id
 
-  # Ingress rule to allow traffic from the internet to the ALB
+  # Allow HTTP and HTTPS traffic
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow traffic from anywhere on the internet
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Egress rule to allow all outbound traffic from the ALB
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -89,6 +104,7 @@ resource "aws_security_group" "alb_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 resource "aws_iam_role" "ecs_task_role" {
   name = "my-ecs-task-role"
@@ -160,6 +176,11 @@ resource "aws_iam_role" "ecs_execution_role" {
       }
     }]
   })
+}
+
+resource "aws_iam_role_policy_attachment" "app_runner_service_policy_attachment" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSAppRunnerServicePolicyForECRAccess"
 }
 
 # Attach an IAM policy that provides ECR permissions to the execution role
