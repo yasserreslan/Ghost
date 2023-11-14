@@ -120,14 +120,22 @@ resource "aws_ecs_task_definition" "my_task_definition" {
 
   network_mode = "awsvpc" # Required for Fargate
 
-  container_definitions = jsonencode([{
+    container_definitions = jsonencode([{
     name  = "ghost"
     image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
     portMappings = [{
-      containerPort = 80
-      hostPort      = 80
+        containerPort = 80
+        hostPort      = 80
     }]
-  }])
+    logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+        awslogs-group         = "/ecs/my-ecs-service"
+        awslogs-region        = "eu-central-1"
+        awslogs-stream-prefix = "ecs"
+        }
+    }
+    }])
 }
 
 # ALB and ALB security group remain the same
@@ -224,23 +232,6 @@ resource "aws_ecs_service" "my_service" {
   }
 
   desired_count = 1
-
-  container_definitions = jsonencode([{
-  name  = "ghost"
-  image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
-  portMappings = [{
-    containerPort = 80
-    hostPort      = 80
-  }]
-  logConfiguration = {
-    logDriver = "awslogs"
-    options = {
-      awslogs-group         = "/ecs/my-ecs-service"
-      awslogs-region        = "eu-central-1"
-      awslogs-stream-prefix = "ecs"
-    }
-  }
-}])
 
 }
 
