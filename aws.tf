@@ -238,13 +238,23 @@ resource "aws_route" "nat_gateway_route" {
 
 
 
-
-# Attach the ECR policy to the execution role
-resource "aws_iam_policy_attachment" "ecs_execution_role_ecr_attachment" {
+# Attach the AmazonECSTaskExecutionRolePolicy policy
+resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy_attachment" {
   name       = "ecs_execution_role_ecr_attachment"
-  roles      = [aws_iam_role.ecs_execution_role.name]
-  policy_arn = aws_iam_policy.ecs_execution_policy.arn
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
+
+
+
+# # Attach the ECR policy to the execution role
+# resource "aws_iam_policy_attachment" "ecs_execution_role_ecr_attachment" {
+#   name       = "ecs_execution_role_ecr_attachment"
+#   roles      = [aws_iam_role.ecs_execution_role.name]
+#   policy_arn = aws_iam_policy.ecs_execution_policy.arn
+# }
+
+
 
 resource "aws_iam_policy" "cloudwatch_logs_policy" {
   name        = "ecs-cloudwatch-logs-policy"
