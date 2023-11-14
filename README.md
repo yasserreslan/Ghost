@@ -1,103 +1,76 @@
-&nbsp;
-<p align="center">
-  <a href="https://ghost.org/#gh-light-mode-only" target="_blank">
-    <img src="https://user-images.githubusercontent.com/65487235/157884383-1b75feb1-45d8-4430-b636-3f7e06577347.png" alt="Ghost" width="200px">
-  </a>
-  <a href="https://ghost.org/#gh-dark-mode-only" target="_blank">
-    <img src="https://user-images.githubusercontent.com/65487235/157849205-aa24152c-4610-4d7d-b752-3a8c4f9319e6.png" alt="Ghost" width="200px">
-  </a>
-</p>
-&nbsp;
+# Terraform Infrastructure for Ghost CMS on AWS
 
-<p align="center">
-    <a href="https://ghost.org/">Ghost.org</a> •
-    <a href="https://forum.ghost.org">Forum</a> •
-    <a href="https://ghost.org/docs/">Docs</a> •
-    <a href="https://github.com/TryGhost/Ghost/blob/main/.github/CONTRIBUTING.md">Contributing</a> •
-    <a href="https://twitter.com/ghost">Twitter</a>
-    <br /><br />
-    <a href="https://ghost.org/">
-        <img src="https://img.shields.io/badge/downloads-3M-brightgreen.svg" alt="Downloads" />
-    </a>
-    <a href="https://github.com/TryGhost/Ghost/releases/">
-        <img src="https://img.shields.io/github/release/TryGhost/Ghost.svg" alt="Latest release" />
-    </a>
-    <a href="https://github.com/TryGhost/Ghost/actions">
-        <img src="https://github.com/TryGhost/Ghost/workflows/CI/badge.svg?branch=main" alt="Build status" />
-    </a>
-    <a href="https://github.com/TryGhost/Ghost/contributors/">
-        <img src="https://img.shields.io/github/contributors/TryGhost/Ghost.svg" alt="Contributors" />
-    </a>
-</p>
-<p align="center">
-  Love open source? <a href="https://careers.ghost.org/devops-engineer">We're hiring</a> DevOps engineers to work on Ghost full-time.
-</p>
+Welcome to the Terraform infrastructure setup for deploying the Ghost CMS on AWS! This README provides a comprehensive overview of the infrastructure components and their configurations. Below, we'll walk you through each service as part of the setup.
 
-&nbsp;
+## OIDC Authentication and GitHub Actions
 
-<a href="https://ghost.org/"><img src="https://user-images.githubusercontent.com/353959/169805900-66be5b89-0859-4816-8da9-528ed7534704.png" alt="Fiercely independent, professional publishing. Ghost is the most popular open source, headless Node.js CMS which already works with all the tools you know and love." /></a>
+This setup utilizes OIDC (OpenID Connect) authentication to securely connect to AWS and automate the deployment of the Ghost CMS using GitHub Actions.
 
-&nbsp;
+**OIDC Authentication**: OIDC is employed to establish a secure and authenticated connection to AWS. OIDC provides a standardized way to verify the identities of users or services.
 
-<a href="https://ghost.org/pricing/#gh-light-mode-only" target="_blank"><img src="https://user-images.githubusercontent.com/65487235/157849437-9b8fcc48-1920-4b26-a1e8-5806db0e6bb9.png" alt="Ghost(Pro)" width="165px" /></a>
-<a href="https://ghost.org/pricing/#gh-dark-mode-only" target="_blank"><img src="https://user-images.githubusercontent.com/65487235/157849438-79889b04-b7b6-4ba7-8de6-4c1e4b4e16a5.png" alt="Ghost(Pro)" width="165px" /></a>
+**GitHub Actions Integration**: GitHub Actions is utilized to automate the Terraform deployment process. With OIDC authentication configured, GitHub Actions can securely authenticate with AWS and execute Terraform scripts.
 
-The easiest way to get a production instance deployed is with our official **[Ghost(Pro)](https://ghost.org/pricing/)** managed service. It takes about 2 minutes to launch a new site with worldwide CDN, backups, security and maintenance all done for you.
+The integration between OIDC, AWS, and GitHub Actions ensures that your infrastructure deployments are both automated and secure.
 
-For most people this ends up being the best value option because of [how much time it saves](https://ghost.org/docs/hosting/) — and 100% of revenue goes to the Ghost Foundation; funding the maintenance and further development of the project itself. So you’ll be supporting open source software *and* getting a great service!
+## Elastic Container Registry (ECR) Repository
 
-&nbsp;
+The Elastic Container Registry (ECR) is a managed Docker container registry service by AWS. In this setup, an ECR repository named "ghost" is created to store Docker images securely.
 
-# Quickstart install
+ECR allows you to version and manage your Docker images efficiently, ensuring that your Ghost CMS container image is readily available for deployment.
 
-If you want to run your own instance of Ghost, in most cases the best way is to use our **CLI tool**
+## Docker Image Build and Push to ECR
 
-```
-npm install ghost-cli -g
-```
+To deploy applications using containers, it's crucial to build and push Docker images to ECR. This step is facilitated using Terraform's provisions and local-exec provisioners to execute Docker commands.
 
-&nbsp;
+Building and pushing the Docker image ensures that you have a containerized Ghost CMS ready for deployment.
 
-Then, if installing locally add the `local` flag to get up and running in under a minute - [Local install docs](https://ghost.org/docs/install/local/)
+## ECR VPC Endpoints
 
-```
-ghost install local
-```
+Security and isolation are vital when dealing with container registries. To enhance security, Virtual Private Cloud (VPC) endpoints are set up for both ECR API and Docker services.
 
-&nbsp;
+These endpoints allow private and secure communication between your VPC and ECR, eliminating the need for public internet access when interacting with the container registry.
 
-or on a server run the full install, including automatic SSL setup using LetsEncrypt - [Production install docs](https://ghost.org/docs/install/ubuntu/)
+## VPC and Subnets
 
-```
-ghost install
-```
+A Virtual Private Cloud (VPC) provides isolated network resources for your infrastructure, while subnets are logical segments within the VPC. In this setup, a VPC and subnets are created to organize your infrastructure logically.
 
-&nbsp;
+The VPC and subnets ensure that your infrastructure components are properly isolated and can be configured as public or private as needed.
 
-Check out our [official documentation](https://ghost.org/docs/) for more information about our [recommended hosting stack](https://ghost.org/docs/hosting/) & properly [upgrading Ghost](https://ghost.org/docs/update/), plus everything you need to develop your own Ghost [themes](https://ghost.org/docs/themes/) or work with [our API](https://ghost.org/docs/content-api/).
+## Security Groups
 
-### Contributors & advanced developers
+Security groups serve as virtual firewalls, controlling inbound and outbound traffic to AWS resources. Security groups for Fargate services and an Application Load Balancer (ALB) are defined in this setup.
 
-For anyone wishing to contribute to Ghost or to hack/customize core files we recommend following our full development setup guides: [Contributor guide](https://ghost.org/docs/contributing/) • [Developer setup](https://ghost.org/docs/install/source/)
+These security groups allow you to specify which traffic is allowed to reach your ECS tasks and ALB, enhancing your infrastructure's security posture.
 
-&nbsp;
+## IAM Roles and Policies
 
-# Ghost sponsors
+Identity and Access Management (IAM) roles and policies are crucial for managing permissions and access to AWS resources. In this setup, IAM roles are defined for ECS tasks and execution.
 
-We'd like to extend big thanks to our sponsors and partners who make Ghost possible. If you're interested in sponsoring Ghost and supporting the project, please check out our profile on [GitHub sponsors](https://github.com/sponsors/TryGhost) :heart:
+These roles are associated with policies that allow ECS tasks to access ECR and send logs to CloudWatch, ensuring that your Ghost CMS containers can function effectively.
 
-**[DigitalOcean](https://m.do.co/c/9ff29836d717)** • **[Fastly](https://www.fastly.com/)**
+## ECS Cluster and Service
 
-&nbsp;
+Amazon Elastic Container Service (ECS) is used to manage containers in this setup. An ECS cluster and service are defined to host the Ghost CMS.
 
-# Getting help
+ECS provides a scalable and efficient platform for running containers, and AWS Fargate abstracts the underlying infrastructure, making it easier to manage and scale your application.
 
-You can find answers to a huge variety of questions, along with a large community of helpful developers over on the [Ghost forum](https://forum.ghost.org/) - replies are generally very quick. **Ghost(Pro)** customers also have access to 24/7 email support.
+## Application Load Balancer (ALB)
 
-To stay up to date with all the latest news and product updates, make sure you [subscribe to our blog](https://ghost.org/blog/) — or you can always follow us [on Twitter](https://twitter.com/Ghost), if you prefer your updates bite-sized and facetious. :saxophone::turtle:
+An Application Load Balancer (ALB) is a crucial component for distributing incoming traffic to ECS service instances. The ALB is configured to ensure that traffic is routed appropriately to your Ghost CMS containers.
 
-&nbsp;
+The ALB acts as a traffic controller, allowing your application to handle incoming requests efficiently.
 
-# Copyright & license
+## Amazon RDS (Relational Database Service)
 
-Copyright (c) 2013-2023 Ghost Foundation - Released under the [MIT license](LICENSE). Ghost and the Ghost Logo are trademarks of Ghost Foundation Ltd. Please see our [trademark policy](https://ghost.org/trademark/) for info on acceptable usage.
+While the code mentions Amazon RDS, the actual resource definition is not included in this README. You can configure an Amazon RDS instance separately to store the database for your Ghost CMS.
+
+Amazon RDS is a managed database service that offers reliability, scalability, and security for your database needs.
+
+This README provides an in-depth look at the Terraform infrastructure for deploying the Ghost CMS on AWS. To get started, follow the deployment steps mentioned earlier, and customize the code to meet your specific requirements.
+
+For any questions or further assistance, please feel free to reach out. Happy deploying!
+
+
+
+
+

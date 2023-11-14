@@ -1,4 +1,8 @@
-resource "aws_s3_bucket" "batata"{
-    bucket = "batata-bucket-yasser"
+resource "aws_s3_bucket" "bucket"{
+    bucket = "ghost-bucket"
 }
 
+resource "aws_s3_bucket" "ghost_content" {
+  bucket = "ghost-content-bucket"
+  acl    = "private"
+}
