@@ -21,7 +21,4 @@ resource "aws_security_group" "rds_sg" {
   }
 }
 
-resource "aws_db_instance_sg_attachment" "rds_sg_attachment" {
-  db_instance_identifier = aws_db_instance.ghost_db.id
-  security_group_id      = aws_security_group.rds_sg.id
-}
+
