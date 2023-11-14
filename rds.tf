@@ -5,7 +5,7 @@ resource "aws_db_instance" "ghost_db" {
   engine_version       = "5.7"
   instance_class       = "db.t2.micro"
   name                 = "ghost_db"
-  username             = var.db_user
+  username             = var.db_username
   password             = var.db_password
   parameter_group_name = "default.mysql5.7"
 }

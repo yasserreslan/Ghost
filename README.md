@@ -12,6 +12,8 @@ This setup utilizes OIDC (OpenID Connect) authentication to securely connect to 
 
 The integration between OIDC, AWS, and GitHub Actions ensures that your infrastructure deployments are both automated and secure.
 
+**Secure Storage of Credentials**: To ensure the security of your credentials, usernames, and passwords are stored as GitHub Secrets. GitHub Secrets provide a secure way to store sensitive information, keeping your authentication details safe.
+
 ## Elastic Container Registry (ECR) Repository
 
 The Elastic Container Registry (ECR) is a managed Docker container registry service by AWS. In this setup, an ECR repository named "ghost" is created to store Docker images securely.
