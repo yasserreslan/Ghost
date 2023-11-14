@@ -27,6 +27,40 @@ resource "null_resource" "docker_build_push" {
   
 }
 
+
+# ECR VPC Endpoint
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id             = aws_vpc.my_vpc.id
+  service_name       = "com.amazonaws.${var.region}.ecr.api"
+  vpc_endpoint_type  = "Interface"
+  private_dns_enabled = true
+
+  subnet_ids = [aws_subnet.subnet_a[0].id, aws_subnet.subnet_a[1].id]
+
+  security_group_ids = [aws_security_group.fargate_sg.id]
+
+  tags = {
+    Name = "ecr-api-endpoint"
+  }
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id             = aws_vpc.my_vpc.id
+  service_name       = "com.amazonaws.${var.region}.ecr.dkr"
+  vpc_endpoint_type  = "Interface"
+  private_dns_enabled = true
+
+  subnet_ids = [aws_subnet.subnet_a[0].id, aws_subnet.subnet_a[1].id]
+
+  security_group_ids = [aws_security_group.fargate_sg.id]
+
+  tags = {
+    Name = "ecr-dkr-endpoint"
+  }
+}
+
+
+
 # Define your ECS cluster
 resource "aws_ecs_cluster" "my_cluster" {
   name = "my-ecs-cluster"
