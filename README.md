@@ -68,7 +68,7 @@ Amazon RDS is a managed database service that offers reliability, scalability, a
 
 This README provides an in-depth look at the Terraform infrastructure for deploying the Ghost CMS on AWS. To get started, follow the deployment steps mentioned earlier, and customize the code to meet your specific requirements.
 
-For any questions or further assistance, please feel free to reach out. Happy deploying!
+For any questions or further assistance, please feel free to reach out. Happy deploying
 
 
 
