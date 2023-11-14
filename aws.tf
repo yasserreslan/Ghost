@@ -164,22 +164,30 @@ resource "aws_iam_policy_attachment" "ecs_execution_role_ecr_attachment" {
   policy_arn = aws_iam_policy.ecs_execution_policy.arn
 }
 
-resource "aws_iam_role" "ecs_task_role" {
-  name = "my-ecs-task-role"
+resource "aws_iam_policy" "cloudwatch_logs_policy" {
+  name        = "ecs-cloudwatch-logs-policy"
+  description = "Allow ECS to send logs to CloudWatch"
 
-  assume_role_policy = jsonencode({
+  policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [
-      {
-        Action = "sts:AssumeRole",
-        Effect = "Allow",
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-      }
-    ]
+    Statement = [{
+      Effect   = "Allow",
+      Action   = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      Resource = "*"
+    }]
   })
 }
+
+resource "aws_iam_policy_attachment" "ecs_execution_role_cloudwatch_logs_attachment" {
+  name       = "ecs-execution-role-cloudwatch-logs-attachment"
+  roles      = [aws_iam_role.ecs_execution_role.name]
+  policy_arn = aws_iam_policy.cloudwatch_logs_policy.arn
+}
+
 
 
 # Define the Fargate ECS service
@@ -201,6 +209,24 @@ resource "aws_ecs_service" "my_service" {
   }
 
   desired_count = 1
+
+  container_definitions = jsonencode([{
+  name  = "ghost"
+  image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+  portMappings = [{
+    containerPort = 80
+    hostPort      = 80
+  }]
+  logConfiguration = {
+    logDriver = "awslogs"
+    options = {
+      awslogs-group         = "/ecs/my-ecs-service"
+      awslogs-region        = "eu-central-1"
+      awslogs-stream-prefix = "ecs"
+    }
+  }
+}])
+
 }
 
 # Define a target group for the load balancer
@@ -218,5 +244,26 @@ resource "aws_lb_target_group" "my_target_group" {
     healthy_threshold   = 2
     unhealthy_threshold = 2
     matcher             = "200"
+  }
+}
+
+# Create an Application Load Balancer
+resource "aws_lb" "my_alb" {
+  name               = "my-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = aws_subnet.subnet_a[*].id
+}
+
+# Create a Listener for the ALB
+resource "aws_lb_listener" "my_listener" {
+  load_balancer_arn = aws_lb.my_alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.my_target_group.arn
   }
 }
