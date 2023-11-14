@@ -90,6 +90,21 @@ resource "aws_security_group" "alb_sg" {
   }
 }
 
+resource "aws_iam_role" "ecs_task_role" {
+  name = "my-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action = "sts:AssumeRole",
+      Effect = "Allow",
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
+    }]
+  })
+}
+
 
 
 # IAM execution role and policy
@@ -104,6 +119,8 @@ resource "aws_ecs_task_definition" "my_task_definition" {
   memory                   = "512"  # Adjust based on your needs
 
   network_mode = "awsvpc" # Required for Fargate
+
+  task_role_arn = aws_iam_role.ecs_task_role.arn
 
   container_definitions = jsonencode([{
     name  = "ghost"
