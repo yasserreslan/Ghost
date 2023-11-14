@@ -25,3 +25,32 @@ resource "aws_ecs_service" "my_service" {
   desired_count = 1
 
 }
+
+resource "aws_ecs_task_definition" "my_task_definition" {
+  family                   = "ghost"
+  requires_compatibilities = ["FARGATE"]
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+  cpu                      = "256"  # Adjust based on your needs
+  memory                   = "512"  # Adjust based on your needs
+
+  network_mode = "awsvpc" # Required for Fargate
+
+    container_definitions = jsonencode([{
+    name  = "ghost"
+    image = "${aws_ecr_repository.my_ecr_repository.repository_url}:latest"
+    portMappings = [{
+        containerPort = 80
+        hostPort      = 80
+    }]
+
+    logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+        awslogs-group         = aws_cloudwatch_log_group.ecs_log_group.name
+        awslogs-region        = "eu-central-1" # Replace with your AWS region
+        awslogs-stream-prefix = "ecs"
+        }
+    }
+    }])
+}
