@@ -112,6 +112,7 @@ resource "aws_cloudwatch_log_group" "ecs_log_group" {
 
 
 
+
 # IAM execution role and policy
 
 # Define the Fargate-compatible task definition
@@ -143,8 +144,6 @@ resource "aws_ecs_task_definition" "my_task_definition" {
     }
     }])
 }
-
-
 
 # ALB and ALB security group remain the same
 # Create an IAM execution role for ECS tasks and attach the AmazonECSTaskExecutionRole policy
@@ -193,11 +192,21 @@ resource "aws_internet_gateway" "my_igw" {
 }
 
 
-resource "aws_route" "internet_access" {
-  route_table_id         = aws_vpc.my_vpc.main_route_table_id // Replace with your route table ID if not using the default
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.my_igw.id
+resource "aws_nat_gateway" "my_nat_gateway" {
+  allocation_id = aws_eip.my_eip.id
+  subnet_id     = aws_subnet.my_public_subnet.id
 }
+
+resource "aws_eip" "my_eip" {
+  vpc = true
+}
+
+resource "aws_route" "nat_gateway_route" {
+  route_table_id         = aws_vpc.my_vpc.main_route_table_id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.my_nat_gateway.id
+}
+
 
 
 
@@ -232,6 +241,17 @@ resource "aws_iam_policy_attachment" "ecs_execution_role_cloudwatch_logs_attachm
   policy_arn = aws_iam_policy.cloudwatch_logs_policy.arn
 }
 
+resource "aws_security_group" "ecs_tasks_sg" {
+  name_prefix = "ecs-tasks-sg-"
+  vpc_id      = aws_vpc.my_vpc.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
 
 
 # Define the Fargate ECS service
@@ -242,8 +262,8 @@ resource "aws_ecs_service" "my_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets = aws_subnet.subnet_a[*].id
-    security_groups = [aws_security_group.fargate_sg.id]
+    subnets          = [aws_subnet.subnet_a[0].id, aws_subnet.subnet_a[1].id] # Replace with your private subnet IDs
+    security_groups  = [aws_security_group.ecs_tasks_sg.id]
   }
 
   load_balancer {
@@ -294,3 +314,4 @@ resource "aws_lb_listener" "my_listener" {
     target_group_arn = aws_lb_target_group.my_target_group.arn
   }
 }
+
