@@ -31,7 +31,7 @@ resource "null_resource" "docker_build_push" {
 # ECR VPC Endpoint
 resource "aws_vpc_endpoint" "ecr_api" {
   vpc_id             = aws_vpc.my_vpc.id
-  service_name       = "com.amazonaws.${var.region}.ecr.api"
+  service_name       = "com.amazonaws.eu-central-1.ecr.api"
   vpc_endpoint_type  = "Interface"
   private_dns_enabled = true
 
@@ -46,7 +46,7 @@ resource "aws_vpc_endpoint" "ecr_api" {
 
 resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id             = aws_vpc.my_vpc.id
-  service_name       = "com.amazonaws.${var.region}.ecr.dkr"
+  service_name       = "com.amazonaws.eu-central-1.ecr.dkr"
   vpc_endpoint_type  = "Interface"
   private_dns_enabled = true
 
