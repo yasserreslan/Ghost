@@ -10,8 +10,6 @@ The core of this deployment lies within the Terraform configuration files, where
 
 Currently, I am experiencing challenges with the GitHub Actions pipeline linked to this project. The primary issue stems from certain misconfigurations that are disrupting its expected functionality. Within the scope of these pipelines, there are segments that operate correctly. However, I am encountering specific problems related to ECS connectivity with the RDS. The latest pipelines are intended to add the necessary components, assuming they would function correctly.
 
-For any questions please feel free to reach out.
-
 ## OIDC Authentication and GitHub Actions
 
 This setup utilizes OIDC (OpenID Connect) authentication to securely connect to AWS and automate the deployment of the Ghost CMS using GitHub Actions.
@@ -74,6 +72,7 @@ The ALB acts as a traffic controller, allowing the application to handle incomin
 
 ## Amazon RDS (Relational Database Service)
 
+For any questions please feel free to reach out.
 
 
 
