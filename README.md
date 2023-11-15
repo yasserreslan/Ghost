@@ -68,7 +68,13 @@ While the code mentions Amazon RDS, the actual resource definition is not includ
 
 Amazon RDS is a managed database service that offers reliability, scalability, and security for your database needs.
 
-This README provides an in-depth look at the Terraform infrastructure for deploying the Ghost CMS on AWS. To get started, follow the deployment steps mentioned earlier, and customize the code to meet your specific requirements.
+## Terraform Infrastructure and Pipeline Status
+
+The core of this deployment lies within the Terraform configuration files, where you define the infrastructure components and their configurations. The infrastructure-as-code (IAC) approach allows you to manage and version your infrastructure efficiently.
+
+### Pipeline Status
+
+Currently, the GitHub Actions pipeline associated with this code is not functioning as expected. This might be due to various reasons, such as misconfigurations, missing dependencies, or environmental factors.
 
 For any questions or further assistance, please feel free to reach out. Happy deploying
 

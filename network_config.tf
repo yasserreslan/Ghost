@@ -20,13 +20,12 @@ resource "aws_security_group" "fargate_sg" {
   name_prefix = "my-fargate-sg-"
   vpc_id      = aws_vpc.my_vpc.id
 
-  # Allow HTTP and HTTPS traffic
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-    security_groups = [aws_security_group.alb_sg.id] # Allow traffic from ALB security group
+    security_groups = [aws_security_group.alb_sg.id]
 
   }
 
@@ -50,7 +49,6 @@ resource "aws_security_group" "alb_sg" {
   name_prefix = "my-alb-sg-"
   vpc_id      = aws_vpc.my_vpc.id
 
-  # Allow HTTP and HTTPS traffic
   ingress {
     from_port   = 80
     to_port     = 80
@@ -91,9 +89,6 @@ resource "aws_iam_role" "ecs_task_role" {
 
 
 
-
-# ALB and ALB security group remain the same
-# Create an IAM execution role for ECS tasks and attach the AmazonECSTaskExecutionRole policy
 resource "aws_iam_role" "ecs_execution_role" {
   name = "my-ecs-execution-role"
 
@@ -149,9 +144,9 @@ resource "aws_internet_gateway" "my_igw" {
 
 resource "aws_subnet" "my_public_subnet" {
   vpc_id            = aws_vpc.my_vpc.id
-  cidr_block        = "10.0.3.0/24"  # Changed to a non-overlapping range
+  cidr_block        = "10.0.3.0/24"
   map_public_ip_on_launch = true
-  availability_zone = "eu-central-1a"  # Replace with your desired AZ
+  availability_zone = "eu-central-1a"
 }
 
 

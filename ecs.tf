@@ -31,10 +31,10 @@ resource "aws_ecs_task_definition" "my_task_definition" {
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
-  cpu                      = "256"  # Adjust based on your needs
-  memory                   = "512"  # Adjust based on your needs
+  cpu                      = "256"
+  memory                   = "512"
 
-  network_mode = "awsvpc" # Required for Fargate
+  network_mode = "awsvpc" 
 
     container_definitions = jsonencode([{
     name  = "ghost"
@@ -48,7 +48,7 @@ resource "aws_ecs_task_definition" "my_task_definition" {
         logDriver = "awslogs"
         options = {
         awslogs-group         = aws_cloudwatch_log_group.ecs_log_group.name
-        awslogs-region        = "eu-central-1" # Replace with your AWS region
+        awslogs-region        = "eu-central-1"
         awslogs-stream-prefix = "ecs"
         }
     }
