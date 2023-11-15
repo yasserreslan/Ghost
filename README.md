@@ -65,13 +65,13 @@ The ALB acts as a traffic controller, allowing the application to handle incomin
 ## Amazon RDS (Relational Database Service)
 
 
-## Terraform Infrastructure and Pipeline Status
+# Terraform Infrastructure and Pipeline Status
 
 The core of this deployment lies within the Terraform configuration files, where you define the infrastructure components and their configurations. The infrastructure-as-code (IAC) approach allows to manage and version infrastructure efficiently.
 
-### Pipeline Status
+# Pipeline Status
 
-Currently, the GitHub Actions pipeline associated with this code is not functioning as expected. This is due to misconfigurations.
+Currently, I am experiencing challenges with the GitHub Actions pipeline linked to this project. The primary issue stems from certain misconfigurations that are disrupting its expected functionality. Within the scope of these pipelines, there are segments that operate correctly. However, I am encountering specific problems related to ECS connectivity with the RDS. The latest pipelines are intended to add the necessary components, assuming they would function correctly.
 
 For any questions please feel free to reach out.
 
