@@ -2,6 +2,16 @@
 
 Welcome to the Terraform infrastructure setup for deploying the Ghost CMS on AWS! This README provides a comprehensive overview of the infrastructure components and their configurations. Below, we'll walk you through each service as part of the setup.
 
+# Terraform Infrastructure and Pipeline Status
+
+The core of this deployment lies within the Terraform configuration files, where you define the infrastructure components and their configurations. The infrastructure-as-code (IAC) approach allows to manage and version infrastructure efficiently.
+
+# Pipeline Status
+
+Currently, I am experiencing challenges with the GitHub Actions pipeline linked to this project. The primary issue stems from certain misconfigurations that are disrupting its expected functionality. Within the scope of these pipelines, there are segments that operate correctly. However, I am encountering specific problems related to ECS connectivity with the RDS. The latest pipelines are intended to add the necessary components, assuming they would function correctly.
+
+For any questions please feel free to reach out.
+
 ## OIDC Authentication and GitHub Actions
 
 This setup utilizes OIDC (OpenID Connect) authentication to securely connect to AWS and automate the deployment of the Ghost CMS using GitHub Actions.
@@ -65,15 +75,6 @@ The ALB acts as a traffic controller, allowing the application to handle incomin
 ## Amazon RDS (Relational Database Service)
 
 
-# Terraform Infrastructure and Pipeline Status
-
-The core of this deployment lies within the Terraform configuration files, where you define the infrastructure components and their configurations. The infrastructure-as-code (IAC) approach allows to manage and version infrastructure efficiently.
-
-# Pipeline Status
-
-Currently, I am experiencing challenges with the GitHub Actions pipeline linked to this project. The primary issue stems from certain misconfigurations that are disrupting its expected functionality. Within the scope of these pipelines, there are segments that operate correctly. However, I am encountering specific problems related to ECS connectivity with the RDS. The latest pipelines are intended to add the necessary components, assuming they would function correctly.
-
-For any questions please feel free to reach out.
 
 
 
