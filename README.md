@@ -74,7 +74,7 @@ The core of this deployment lies within the Terraform configuration files, where
 
 ### Pipeline Status
 
-Currently, the GitHub Actions pipeline associated with this code is not functioning as expected. This might be due to various reasons, such as misconfigurations, missing dependencies, or environmental factors.
+Currently, the GitHub Actions pipeline associated with this code is not functioning as expected. This is due to misconfigurations.
 
 For any questions or further assistance, please feel free to reach out. Happy deploying
 
